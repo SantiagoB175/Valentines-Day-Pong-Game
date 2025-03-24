@@ -1,134 +1,171 @@
-import turtle
-import time
+#PONG pygame
 
-# Create screen
-sc = turtle.Screen()
-sc.title("Valentines Day Pong")
-sc.bgcolor("white")
-sc.setup(width=1000, height=600)
+import random
+import pygame, sys
+from pygame.locals import *
 
-# Left paddle
-left_pad = turtle.Turtle()
-left_pad.speed(0)
-left_pad.shape("square")
-left_pad.color("red")
-left_pad.shapesize(stretch_wid=6, stretch_len=2)
-left_pad.penup()
-left_pad.goto(-400, 0)
+pygame.init()
+fps = pygame.time.Clock()
 
-# Right paddle
-right_pad = turtle.Turtle()
-right_pad.speed(0)
-right_pad.shape("square")
-right_pad.color("red")
-right_pad.shapesize(stretch_wid=6, stretch_len=2)
-right_pad.penup()
-right_pad.goto(400, 0)
+#colors
+WHITE = (255,255,255)
+RED = (255,0,0)
+GREEN = (0,255,0)
+BLACK = (0,0,0)
 
-# Ball of circle shape
-hit_ball = turtle.Turtle()
-hit_ball.speed(4)  # Adjusted speed
-hit_ball.shape("circle")
-hit_ball.color("blue")
-hit_ball.penup()
-hit_ball.goto(0, 0)
-hit_ball.dx = 5
-hit_ball.dy = -5
+#globals
+WIDTH = 600
+HEIGHT = 400       
+BALL_RADIUS = 20
+PAD_WIDTH = 8
+PAD_HEIGHT = 80
+HALF_PAD_WIDTH = PAD_WIDTH / 2
+HALF_PAD_HEIGHT = PAD_HEIGHT / 2
+ball_pos = [0,0]
+ball_vel = [0,0]
+paddle1_vel = 0
+paddle2_vel = 0
+l_score = 0
+r_score = 0
 
-# Initialize the score
-left_player = 0
-right_player = 0
+#canvas declaration
+window = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
+pygame.display.set_caption('Hello World')
 
-# Displays the score
-sketch = turtle.Turtle()
-sketch.speed(0)
-sketch.color("blue")
-sketch.penup()
-sketch.hideturtle()
-sketch.goto(0, 260)
-sketch.write("Left_player : 0    Right_player: 0",
-             align="center", font=("Courier", 24, "normal"))
+# helper function that spawns a ball, returns a position vector and a velocity vector
+# if right is True, spawn to the right, else spawn to the left
+def ball_init(right):
+    global ball_pos, ball_vel # these are vectors stored as lists
+    ball_pos = [WIDTH/2,HEIGHT/2]
+    horz = random.randrange(2,4)
+    vert = random.randrange(1,3)
+    
+    if right == False:
+        horz = - horz
+        
+    ball_vel = [horz,-vert]
 
-# Functions to move paddles
-
-
-def paddleaup():
-    y = left_pad.ycor()
-    if y < 250:  # Limit paddle movement
-        y += 20
-        left_pad.sety(y)
-
-
-def paddleadown():
-    y = left_pad.ycor()
-    if y > -240:  # Limit paddle movement
-        y -= 20
-        left_pad.sety(y)
+# define event handlers
+def init():
+    global paddle1_pos, paddle2_pos, paddle1_vel, paddle2_vel,l_score,r_score  # these are floats
+    global score1, score2  # these are ints
+    paddle1_pos = [HALF_PAD_WIDTH - 1,HEIGHT/2]
+    paddle2_pos = [WIDTH +1 - HALF_PAD_WIDTH,HEIGHT/2]
+    l_score = 0
+    r_score = 0
+    if random.randrange(0,2) == 0:
+        ball_init(True)
+    else:
+        ball_init(False)
 
 
-def paddlebup():
-    y = right_pad.ycor()
-    if y < 250:  # Limit paddle movement
-        y += 20
-        right_pad.sety(y)
+#draw function of canvas
+def draw(canvas):
+    global paddle1_pos, paddle2_pos, ball_pos, ball_vel, l_score, r_score
+           
+    canvas.fill(BLACK)
+    pygame.draw.line(canvas, WHITE, [WIDTH / 2, 0],[WIDTH / 2, HEIGHT], 1)
+    pygame.draw.line(canvas, WHITE, [PAD_WIDTH, 0],[PAD_WIDTH, HEIGHT], 1)
+    pygame.draw.line(canvas, WHITE, [WIDTH - PAD_WIDTH, 0],[WIDTH - PAD_WIDTH, HEIGHT], 1)
+    pygame.draw.circle(canvas, WHITE, [WIDTH//2, HEIGHT//2], 70, 1)
+
+    # update paddle's vertical position, keep paddle on the screen
+    if paddle1_pos[1] > HALF_PAD_HEIGHT and paddle1_pos[1] < HEIGHT - HALF_PAD_HEIGHT:
+        paddle1_pos[1] += paddle1_vel
+    elif paddle1_pos[1] == HALF_PAD_HEIGHT and paddle1_vel > 0:
+        paddle1_pos[1] += paddle1_vel
+    elif paddle1_pos[1] == HEIGHT - HALF_PAD_HEIGHT and paddle1_vel < 0:
+        paddle1_pos[1] += paddle1_vel
+    
+    if paddle2_pos[1] > HALF_PAD_HEIGHT and paddle2_pos[1] < HEIGHT - HALF_PAD_HEIGHT:
+        paddle2_pos[1] += paddle2_vel
+    elif paddle2_pos[1] == HALF_PAD_HEIGHT and paddle2_vel > 0:
+        paddle2_pos[1] += paddle2_vel
+    elif paddle2_pos[1] == HEIGHT - HALF_PAD_HEIGHT and paddle2_vel < 0:
+        paddle2_pos[1] += paddle2_vel
+
+    #update ball
+    ball_pos[0] += int(ball_vel[0])
+    ball_pos[1] += int(ball_vel[1])
+
+    #draw paddles and ball
+    pygame.draw.circle(canvas, RED, ball_pos, 20, 0)
+    pygame.draw.polygon(canvas, GREEN, [[paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] - HALF_PAD_HEIGHT], [paddle1_pos[0] - HALF_PAD_WIDTH, paddle1_pos[1] + HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] + HALF_PAD_HEIGHT], [paddle1_pos[0] + HALF_PAD_WIDTH, paddle1_pos[1] - HALF_PAD_HEIGHT]], 0)
+    pygame.draw.polygon(canvas, GREEN, [[paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] - HALF_PAD_HEIGHT], [paddle2_pos[0] - HALF_PAD_WIDTH, paddle2_pos[1] + HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] + HALF_PAD_HEIGHT], [paddle2_pos[0] + HALF_PAD_WIDTH, paddle2_pos[1] - HALF_PAD_HEIGHT]], 0)
+
+    #ball collision check on top and bottom walls
+    if int(ball_pos[1]) <= BALL_RADIUS:
+        ball_vel[1] = - ball_vel[1]
+    if int(ball_pos[1]) >= HEIGHT + 1 - BALL_RADIUS:
+        ball_vel[1] = -ball_vel[1]
+    
+    #ball collison check on gutters or paddles
+    if int(ball_pos[0]) <= BALL_RADIUS + PAD_WIDTH and int(ball_pos[1]) in range(paddle1_pos[1] - HALF_PAD_HEIGHT,paddle1_pos[1] + HALF_PAD_HEIGHT,1):
+        ball_vel[0] = -ball_vel[0]
+        ball_vel[0] *= 1.1
+        ball_vel[1] *= 1.1
+    elif int(ball_pos[0]) <= BALL_RADIUS + PAD_WIDTH:
+        r_score += 1
+        ball_init(True)
+        
+    if int(ball_pos[0]) >= WIDTH + 1 - BALL_RADIUS - PAD_WIDTH and int(ball_pos[1]) in range(paddle2_pos[1] - HALF_PAD_HEIGHT,paddle2_pos[1] + HALF_PAD_HEIGHT,1):
+        ball_vel[0] = -ball_vel[0]
+        ball_vel[0] *= 1.1
+        ball_vel[1] *= 1.1
+    elif int(ball_pos[0]) >= WIDTH + 1 - BALL_RADIUS - PAD_WIDTH:
+        l_score += 1
+        ball_init(False)
+
+    #update scores
+    myfont1 = pygame.font.SysFont("Comic Sans MS", 20)
+    label1 = myfont1.render("Score "+str(l_score), 1, (255,255,0))
+    canvas.blit(label1, (50,20))
+
+    myfont2 = pygame.font.SysFont("Comic Sans MS", 20)
+    label2 = myfont2.render("Score "+str(r_score), 1, (255,255,0))
+    canvas.blit(label2, (470, 20))  
+    
+    
+#keydown handler
+def keydown(event):
+    global paddle1_vel, paddle2_vel
+    
+    if event.key == K_UP:
+        paddle2_vel = -8
+    elif event.key == K_DOWN:
+        paddle2_vel = 8
+    elif event.key == K_w:
+        paddle1_vel = -8
+    elif event.key == K_s:
+        paddle1_vel = 8
+
+#keyup handler
+def keyup(event):
+    global paddle1_vel, paddle2_vel
+    
+    if event.key in (K_w, K_s):
+        paddle1_vel = 0
+    elif event.key in (K_UP, K_DOWN):
+        paddle2_vel = 0
+
+init()
 
 
-def paddlebdown():
-    y = right_pad.ycor()
-    if y > -240:  # Limit paddle movement
-        y -= 20
-        right_pad.sety(y)
-
-
-# Keyboard bindings
-sc.listen()
-sc.onkeypress(paddleaup, "w")  # Changed to 'w'
-sc.onkeypress(paddleadown, "s")  # Changed to 's'
-sc.onkeypress(paddlebup, "Up")
-sc.onkeypress(paddlebdown, "Down")
-
-# Main game loop
+#game loop
 while True:
-    sc.update()
-    time.sleep(0.01)  # Add delay to make game smoother
 
-    hit_ball.setx(hit_ball.xcor() + hit_ball.dx)
-    hit_ball.sety(hit_ball.ycor() + hit_ball.dy)
+    draw(window)
 
-    # Checking borders
-    if hit_ball.ycor() > 280:
-        hit_ball.sety(280)
-        hit_ball.dy *= -1
+    for event in pygame.event.get():
 
-    if hit_ball.ycor() < -280:
-        hit_ball.sety(-280)
-        hit_ball.dy *= -1
+        if event.type == KEYDOWN:
+            keydown(event)
+        elif event.type == KEYUP:
+            keyup(event)
+        elif event.type == QUIT:
+            pygame.quit()
+            sys.exit()
+            
+    pygame.display.update()
+    fps.tick(60)
 
-    if hit_ball.xcor() > 500:
-        hit_ball.goto(0, 0)
-        hit_ball.dy *= -1
-        left_player += 1
-        sketch.clear()
-        sketch.write("Left_player : {}    Right_player: {}".format(
-            left_player, right_player), align="center",
-            font=("Courier", 24, "normal"))
-
-    if hit_ball.xcor() < -500:
-        hit_ball.goto(0, 0)
-        hit_ball.dy *= -1
-        right_player += 1
-        sketch.clear()
-        sketch.write("Left_player : {}    Right_player: {}".format(
-            left_player, right_player), align="center",
-            font=("Courier", 24, "normal"))
-
-    # Paddle ball collision
-    if (hit_ball.xcor() > 360 and hit_ball.xcor() < 370) and \
-            (hit_ball.ycor() < right_pad.ycor() + 50 and hit_ball.ycor() > right_pad.ycor() - 50):
-        hit_ball.setx(360)
-        hit_ball.dx *= -1
-
-    if (hit_ball.xcor() < -360 and hit_ball.xcor() > -370) and \
-            (hit_ball.ycor() < left_pad.ycor() + 50 and hit_ball.ycor() > left_pad.ycor() - 50):
-        hit_ball.setx(-360)
-        hit_ball.dx *= -1
